@@ -59,8 +59,10 @@ st.write("This is a log processor for client API requests only.")
 
 uploaded_files = st.file_uploader("Upload Log Files", accept_multiple_files=True, type=["txt", "log"])
 
-start_time_str = st.text_input("Start Time (dd:MMM:yyyy HH:MM:SS)", value='02:Sep:2024 00:00:00')
-end_time_str = st.text_input("End Time (dd:MMM:yyyy HH:MM:SS)", value='02:Sep:2024 23:59:00')
+today_date = datetime.now().strftime('%d:%b:%Y')
+start_time_str = st.text_input("Start Time (dd:MMM:yyyy HH:MM:SS)", value=f'{today_date} 00:00:00')
+end_time_str = st.text_input("End Time (dd:MMM:yyyy HH:MM:SS)", value=f'{today_date} 23:59:00')
+
 
 try:
     start_time = datetime.strptime(start_time_str, '%d:%b:%Y %H:%M:%S')
