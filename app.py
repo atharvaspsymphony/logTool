@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 from datetime import datetime
 import streamlit as st
@@ -5,17 +6,16 @@ from io import StringIO, BytesIO
 
 # Dictionary to map user-friendly search strings to actual strings
 search_string_map = {
-    "POST Order": '{"path":"/orders","method":"POST"',
-    "GET Order": '{"path":"/orders","method":"GET",',
-    "GET Portfolio Positions": '{"path":"/portfolio/positions","method":"GET",',
-    "GET Order Trades": '{"path":"/orders/trades","method":"GET"',
-    "GET User Balance": '"path":"/user/balance","method":"GET"',
-    "GET Portfolio Holdings": '{"path":"/portfolio/holdings","method":"GET"',
-    "PUT Order": '{"path":"/orders","method":"PUT"',
-    "DELETE Order": '{"path":"/orders","method":"DELETE"',
-    "GET Request (Generic)": '"method":"GET"',
+    "PlaceOrder": '{"path":"/orders","method":"POST"',
+    "OrderBook": '{"path":"/orders","method":"GET",',
+    "PositionsBook": '{"path":"/portfolio/positions","method":"GET",',
+    "TradeBook": '{"path":"/orders/trades","method":"GET"',
+    "UserBalance": '"path":"/user/balance","method":"GET"',
+    "Holdings": '{"path":"/portfolio/holdings","method":"GET"',
+    "ModifyOrder": '{"path":"/orders","method":"PUT"',
+    "CancelOrder": '{"path":"/orders","method":"DELETE"',
+    "Total GET Requests": '"method":"GET"',
 }
-
 
 def create_dict_from_lines(uploaded_files, search_strings, start_time, end_time):
     count_dict = {search_string: {} for search_string in search_strings}
@@ -45,10 +45,8 @@ def create_dict_from_lines(uploaded_files, search_strings, start_time, end_time)
 
     return count_dict
 
-
-def export_to_excel(dictionary, selected_labels):
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+def export_to_excel(dictionary, selected_labels, save_path):
+    with pd.ExcelWriter(save_path, engine="xlsxwriter") as writer:
         # Loop through each search string and its corresponding count dictionary
         for label, search_string in selected_labels.items():
             call_by_counts = dictionary[search_string]
@@ -70,9 +68,7 @@ def export_to_excel(dictionary, selected_labels):
             )
             df.to_excel(writer, sheet_name=safe_label, index=False)
 
-    output.seek(0)
-    return output
-
+    return save_path
 
 def process_files(
     uploaded_files, search_strings, start_time, end_time, file_name, selected_labels
@@ -80,15 +76,11 @@ def process_files(
     result_dict = create_dict_from_lines(
         uploaded_files, search_strings, start_time, end_time
     )
-    excel_data = export_to_excel(result_dict, selected_labels)
 
-    st.download_button(
-        label="Download Excel File",
-        data=excel_data,
-        file_name=f"{file_name}.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    )
+    save_path = os.path.join(file_name)  # Ensure the provided file name includes the path
+    export_to_excel(result_dict, selected_labels, save_path)
 
+    st.success(f"File saved successfully at: {save_path}")
 
 # Streamlit app
 st.title("Log File Processor")
@@ -121,7 +113,8 @@ for label, search_string in search_string_map.items():
         selected_search_strings.append(search_string)
         selected_labels[label] = search_string
 
-file_name = st.text_input("Filename", value="processed_log")
+# Input for the file path and name
+file_name = st.text_input("Enter the file path and name (e.g., D:/FileName.xlsx)", value="D:/FileName.xlsx")
 
 if st.button("Process Files") and uploaded_files and selected_search_strings:
     process_files(
