@@ -45,8 +45,11 @@ def create_dict_from_lines(files_in_folder, search_strings, start_time, end_time
 
     return count_dict
 
-def export_to_excel(dictionary, selected_labels, save_path):
-    with pd.ExcelWriter(save_path, engine="xlsxwriter") as writer:
+
+def export_to_excel(dictionary, selected_labels):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+        # Loop through each search string and its corresponding count dictionary
         for label, search_string in selected_labels.items():
             call_by_counts = dictionary[search_string]
             data = sorted(call_by_counts.items(), key=lambda x: x[1], reverse=True)
@@ -67,19 +70,13 @@ def export_to_excel(dictionary, selected_labels, save_path):
 
     return save_path
 
-def process_files(folder_path, search_strings, start_time, end_time, file_name, selected_labels):
-    # Get list of all .log and .txt files in the folder
-    files_in_folder = [
-        os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith((".log", ".txt"))
-    ]
-
-    if not files_in_folder:
-        st.error("No log or text files found in the provided folder.")
-        return
-
-    result_dict = create_dict_from_lines(files_in_folder, search_strings, start_time, end_time)
-    save_path = os.path.join(file_name)  # Ensure the provided file name includes the path
-    export_to_excel(result_dict, selected_labels, save_path)
+def process_files(
+    uploaded_files, search_strings, start_time, end_time, file_name, selected_labels
+):
+    result_dict = create_dict_from_lines(
+        uploaded_files, search_strings, start_time, end_time
+    )
+    excel_data = export_to_excel(result_dict, selected_labels)
 
     st.success(f"File saved successfully at: {save_path}")
 
@@ -113,8 +110,7 @@ for label, search_string in search_string_map.items():
         selected_search_strings.append(search_string)
         selected_labels[label] = search_string
 
-# Input for the file path and name to save the results
-file_name = st.text_input("Enter the file path and name (e.g., D:/FileName.xlsx)", value="D:/FileName.xlsx")
+file_name = st.text_input("Filename", value="processed_log")
 
 if st.button("Process Files") and folder_path and selected_search_strings:
     process_files(
